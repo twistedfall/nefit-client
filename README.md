@@ -17,7 +17,7 @@ cargo add nefit-client
 Or add to your Cargo.toml:
 ```toml
 [dependencies]
-nefit-client = "0.2.4"
+nefit-client = "0.3.0"
 ```
 
 ## Communication library for Nefit (Bosch) gas boilers

@@ -1,6 +1,6 @@
 [package]
 name = "nefit-client"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85.0"
 description = "Library for communicating with Bosch/Nefit thermostat API"
