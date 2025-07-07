@@ -30,7 +30,7 @@ jobs:
 
       - name: Get MSRV package metadata
         id: metadata
-        run: cargo metadata --no-deps --format-version 1 | jq -r '"msrv="+(.packages[]|select(.name=="nefit_client").rust_version)' >> $GITHUB_OUTPUT
+        run: cargo metadata --no-deps --format-version 1 | jq -r '"msrv="+(.packages[]|select(.name=="nefit-client").rust_version)' >> $GITHUB_OUTPUT
 
       - uses: dtolnay/rust-toolchain@master
         with:
