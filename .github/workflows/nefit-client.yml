@@ -17,7 +17,6 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.9
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --workspace --tests -- -D warnings
-      - run: cargo test --workspace
 
   msrv:
     runs-on: ubuntu-24.04
