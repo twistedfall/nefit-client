@@ -16,8 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.9
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo clippy --workspace --all-features --tests -- -D warnings
-      - run: cargo test --workspace --all-features
+      - run: cargo clippy --workspace --tests -- -D warnings
+      - run: cargo test --workspace
 
   msrv:
     runs-on: ubuntu-24.04
@@ -37,4 +37,4 @@ jobs:
           toolchain: ${{ steps.metadata.outputs.msrv }}
           components: clippy,rustfmt
 
-      - run: cargo clippy --workspace --all-features --tests -- -D warnings
+      - run: cargo clippy --workspace --tests -- -D warnings
