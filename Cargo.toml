@@ -22,7 +22,7 @@ buildtime-bindgen = ["libstrophe/buildtime_bindgen"]
 aes = "0.8"
 anyhow = "1"
 base64 = "0.22"
-block-padding = "0.3"
+block-padding = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
 ecb = "0.1"
 httparse = "1"
