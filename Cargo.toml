@@ -19,7 +19,7 @@ maintenance = { status = "passively-maintained" }
 buildtime-bindgen = ["libstrophe/buildtime_bindgen"]
 
 [dependencies]
-aes = "0.8"
+aes = "0.9"
 anyhow = "1"
 base64 = "0.22"
 block-padding = "0.3"
