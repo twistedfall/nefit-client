@@ -24,7 +24,7 @@ anyhow = "1"
 base64 = "0.22"
 block-padding = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
-ecb = "0.1"
+ecb = "0.2"
 httparse = "1"
 libstrophe = { version = "0.20", default-features = false, features = ["libstrophe-0_9_3"] }
 log = "0.4"
