@@ -1,7 +1,11 @@
 use std::borrow::Cow;
 use std::{fmt, marker};
 
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use jiff::ZonedDateTime;
+use jiff::civil::Date;
+use jiff::fmt::temporal::Pieces;
+use jiff::tz::TimeZone;
+use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 
 pub const GAS_USAGE_ENTRIES_PER_PAGE: usize = 32;
@@ -144,7 +148,7 @@ pub enum BoilerIndicator {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct UiUpdate {
 	#[serde(rename = "CTD", deserialize_with = "uiupdate_date_parse")]
-	pub current_date: DateTime<FixedOffset>,
+	pub current_date: ZonedDateTime,
 	#[serde(rename = "CTR")]
 	pub control: String,
 	#[serde(rename = "UMD")]
@@ -213,7 +217,7 @@ pub struct UiStatus {
 #[serde(rename_all = "camelCase")]
 pub struct RecordingRaw {
 	#[serde(rename = "d", deserialize_with = "recording_date_parse")]
-	pub date: Option<NaiveDate>,
+	pub date: Option<Date>,
 	#[serde(rename = "hw")]
 	pub hot_water: f64,
 	#[serde(rename = "ch")]
@@ -224,7 +228,7 @@ pub struct RecordingRaw {
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Deserialize)]
 pub struct Recording {
-	pub date: NaiveDate,
+	pub date: Date,
 	pub hot_water: f64,
 	pub heating: f64,
 	pub average_outdoor_temp: f64,
@@ -274,20 +278,31 @@ fn recording_temp_convert<'de, D: serde::Deserializer<'de>>(d: D) -> Result<f64,
 	i32::deserialize(d).map(|t| t as f64 / 10.)
 }
 
-fn uiupdate_date_parse<'de, D: serde::Deserializer<'de>>(d: D) -> Result<DateTime<FixedOffset>, D::Error> {
+fn uiupdate_date_parse<'de, D: serde::Deserializer<'de>>(d: D) -> Result<ZonedDateTime, D::Error> {
 	let s = String::deserialize(d)?;
-	DateTime::<FixedOffset>::parse_from_str(&s[..s.len() - 3], "%+").map_err(serde::de::Error::custom)
+	let (datetime, _) = s
+		.rsplit_once(' ')
+		.filter(|(_, weekday)| weekday.len() == 2)
+		.ok_or_else(|| D::Error::custom("expected a two-letter weekday after the thermostat timestamp"))?;
+	let pieces = Pieces::parse(datetime).map_err(D::Error::custom)?;
+	let time = pieces.time().ok_or_else(|| D::Error::custom("missing thermostat time"))?;
+	let offset = pieces
+		.to_numeric_offset()
+		.ok_or_else(|| D::Error::custom("missing thermostat UTC offset"))?;
+	pieces
+		.date()
+		.to_datetime(time)
+		.to_zoned_datetime(TimeZone::fixed(offset))
+		.map_err(D::Error::custom)
 }
 
-fn recording_date_parse<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<NaiveDate>, D::Error> {
+fn recording_date_parse<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Date>, D::Error> {
 	let str_date = String::deserialize(d)?;
 	if str_date == "255-256-65535" {
 		// placeholder date when there is no entry for that day
 		Ok(None)
 	} else {
-		NaiveDate::parse_from_str(&str_date, "%d-%m-%Y")
-			.map(Some)
-			.map_err(serde::de::Error::custom)
+		Date::strptime("%d-%m-%Y", &str_date).map(Some).map_err(D::Error::custom)
 	}
 }
 
@@ -375,5 +390,44 @@ pub mod put {
 			),
 			marker::PhantomData,
 		)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use jiff::Timestamp;
+	use jiff::civil::date;
+	use jiff::tz::offset;
+
+	use super::*;
+
+	#[test]
+	fn thermostat_timestamp_keeps_its_offset() {
+		let mut deserializer = serde_json::Deserializer::from_str(r#""2024-02-29T20:49:54.123+01:00 Th""#);
+		let datetime = uiupdate_date_parse(&mut deserializer).unwrap();
+		assert_eq!(datetime.offset(), offset(1));
+		assert_eq!(datetime.timestamp(), "2024-02-29T19:49:54.123Z".parse::<Timestamp>().unwrap());
+
+		let mut deserializer = serde_json::Deserializer::from_str(r#""2024-02-29T19:49:54.123Z Th""#);
+		let utc = uiupdate_date_parse(&mut deserializer).unwrap();
+		assert_eq!(utc.offset(), offset(0));
+		assert_eq!(utc.timestamp(), datetime.timestamp());
+	}
+
+	#[test]
+	fn malformed_thermostat_timestamps_return_errors() {
+		for input in [r#""""#, r#""éé""#, r#""2024-02-29T20:49:54 Th""#] {
+			let mut deserializer = serde_json::Deserializer::from_str(input);
+			assert!(uiupdate_date_parse(&mut deserializer).is_err(), "{input}");
+		}
+	}
+
+	#[test]
+	fn gas_recording_dates_are_parsed_and_placeholders_are_skipped() {
+		let raw: RecordingRaw = serde_json::from_str(r#"{"d":"29-02-2024","hw":1.0,"ch":2.0,"T":35}"#).unwrap();
+		assert_eq!(Recording::from_raw(raw).unwrap().date, date(2024, 2, 29));
+
+		let raw: RecordingRaw = serde_json::from_str(r#"{"d":"255-256-65535","hw":0.0,"ch":0.0,"T":0}"#).unwrap();
+		assert!(Recording::from_raw(raw).is_none());
 	}
 }
