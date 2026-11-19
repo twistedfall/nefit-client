@@ -21,7 +21,7 @@ buildtime-bindgen = ["libstrophe/buildtime_bindgen"]
 [dependencies]
 aes = "0.8"
 anyhow = "1"
-base64 = "0.22"
+base64 = "0.23"
 block-padding = "0.3"
 ecb = "0.1"
 httparse = "1"
