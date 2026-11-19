@@ -189,18 +189,16 @@ impl Communicator {
 				let parse_res = {
 					let mut parser = httparse::Response::new(&mut headers);
 					let out = parser.parse(response.as_bytes())?;
-					if let Some(code) = parser.code {
-						if !(200..300).contains(&code) {
-							return Err(
-								CommunicationError(
-									parser
-										.reason
-										.map(|x| x.to_string().into())
-										.unwrap_or("Unspecified error".into()),
-								)
-								.into(),
-							);
-						}
+					if parser.code.is_some_and(|code| !(200..300).contains(&code)) {
+						return Err(
+							CommunicationError(
+								parser
+									.reason
+									.map(|x| x.to_string().into())
+									.unwrap_or("Unspecified error".into()),
+							)
+							.into(),
+						);
 					}
 					out
 				};

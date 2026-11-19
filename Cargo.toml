@@ -2,7 +2,7 @@
 name = "nefit-client"
 version = "0.3.0"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.89.0"
 description = "Library for communicating with Bosch/Nefit thermostat API"
 keywords = ["nefit", "automation", "gas", "energy", "api"]
 categories = ["api-bindings", "network-programming", "hardware-support"]
@@ -19,11 +19,11 @@ maintenance = { status = "passively-maintained" }
 buildtime-bindgen = ["libstrophe/buildtime_bindgen"]
 
 [dependencies]
-aes = "0.8"
+aes = "0.9"
 anyhow = "1"
 base64 = "0.23"
-block-padding = "0.3"
-ecb = "0.1"
+block-padding = "0.4"
+ecb = "0.2"
 httparse = "1"
 jiff = { version = "1", features = ["serde"] }
 libstrophe = { version = "0.20", default-features = false, features = ["libstrophe-0_9_3"] }
